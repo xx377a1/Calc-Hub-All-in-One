@@ -1,0 +1,187 @@
+import { jsPDF } from 'jspdf';
+
+export interface PDFExportData {
+  calculatorName: string;
+  categoryName?: string;
+  inputs: Array<{ label: string; value: string }>;
+  results: Array<{ label: string; value: string; isHighlight?: boolean }>;
+  formula?: string;
+  notes?: string;
+}
+
+export function generateCalculatorPDF(data: PDFExportData) {
+  const doc = new jsPDF({
+    orientation: 'portrait',
+    unit: 'mm',
+    format: 'a4',
+  });
+
+  const pageWidth = doc.internal.pageSize.getWidth();
+  const margin = 15;
+  let y = margin;
+
+  // Header Background Banner
+  doc.setFillColor(79, 70, 229); // Indigo 600
+  doc.rect(0, 0, pageWidth, 28, 'F');
+
+  // Title on Header
+  doc.setTextColor(255, 255, 255);
+  doc.setFont('helvetica', 'bold');
+  doc.setFontSize(20);
+  doc.text('CalcHub', margin, 14);
+
+  doc.setFontSize(10);
+  doc.setFont('helvetica', 'normal');
+  doc.text('Official Calculation Report', margin, 20);
+
+  // Timestamp on right header
+  const dateStr = new Date().toLocaleDateString('en-US', {
+    year: 'numeric',
+    month: 'short',
+    day: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit',
+  });
+  doc.setFontSize(8);
+  doc.text(dateStr, pageWidth - margin, 18, { align: 'right' });
+
+  y = 36;
+
+  // Calculator Name & Category
+  doc.setTextColor(15, 23, 42); // Slate 900
+  doc.setFont('helvetica', 'bold');
+  doc.setFontSize(16);
+  doc.text(data.calculatorName, margin, y);
+
+  if (data.categoryName) {
+    doc.setFontSize(9);
+    doc.setFont('helvetica', 'bold');
+    doc.setTextColor(99, 102, 241); // Indigo 500
+    doc.text(`Category: ${data.categoryName.toUpperCase()}`, margin, y + 6);
+    y += 12;
+  } else {
+    y += 8;
+  }
+
+  // Divider line
+  doc.setDrawColor(226, 232, 240); // Slate 200
+  doc.setLineWidth(0.4);
+  doc.line(margin, y, pageWidth - margin, y);
+  y += 8;
+
+  // INPUT PARAMETERS SECTION
+  doc.setFont('helvetica', 'bold');
+  doc.setFontSize(11);
+  doc.setTextColor(30, 41, 59); // Slate 800
+  doc.text('Input Parameters', margin, y);
+  y += 6;
+
+  // Inputs Box
+  if (data.inputs && data.inputs.length > 0) {
+    const boxWidth = pageWidth - margin * 2;
+    const inputRowHeight = 7;
+    const boxHeight = data.inputs.length * inputRowHeight + 4;
+
+    doc.setFillColor(248, 250, 252); // Slate 50
+    doc.setDrawColor(226, 232, 240);
+    doc.roundedRect(margin, y, boxWidth, boxHeight, 2, 2, 'FD');
+
+    let rowY = y + 5;
+    data.inputs.forEach((item) => {
+      doc.setFont('helvetica', 'normal');
+      doc.setFontSize(9.5);
+      doc.setTextColor(71, 85, 105);
+      doc.text(item.label, margin + 4, rowY);
+
+      doc.setFont('helvetica', 'bold');
+      doc.setTextColor(15, 23, 42);
+      doc.text(item.value, pageWidth - margin - 4, rowY, { align: 'right' });
+
+      rowY += inputRowHeight;
+    });
+
+    y += boxHeight + 8;
+  }
+
+  // CALCULATION RESULTS SECTION
+  doc.setFont('helvetica', 'bold');
+  doc.setFontSize(11);
+  doc.setTextColor(30, 41, 59);
+  doc.text('Calculation Results', margin, y);
+  y += 6;
+
+  if (data.results && data.results.length > 0) {
+    const boxWidth = pageWidth - margin * 2;
+
+    data.results.forEach((item) => {
+      const isHigh = item.isHighlight;
+      const rowH = isHigh ? 11 : 8;
+
+      if (isHigh) {
+        doc.setFillColor(238, 242, 255); // Indigo 50
+        doc.setDrawColor(199, 210, 254); // Indigo 200
+        doc.roundedRect(margin, y, boxWidth, rowH, 2, 2, 'FD');
+
+        doc.setFont('helvetica', 'bold');
+        doc.setFontSize(10.5);
+        doc.setTextColor(67, 56, 202); // Indigo 700
+        doc.text(item.label, margin + 4, y + 7);
+
+        doc.setFontSize(12);
+        doc.setTextColor(67, 56, 202);
+        doc.text(item.value, pageWidth - margin - 4, y + 7, { align: 'right' });
+      } else {
+        doc.setFillColor(255, 255, 255);
+        doc.setDrawColor(226, 232, 240);
+        doc.roundedRect(margin, y, boxWidth, rowH, 1, 1, 'FD');
+
+        doc.setFont('helvetica', 'normal');
+        doc.setFontSize(9.5);
+        doc.setTextColor(51, 65, 85);
+        doc.text(item.label, margin + 4, y + 5.5);
+
+        doc.setFont('helvetica', 'bold');
+        doc.setTextColor(15, 23, 42);
+        doc.text(item.value, pageWidth - margin - 4, y + 5.5, { align: 'right' });
+      }
+
+      y += rowH + 3;
+    });
+
+    y += 5;
+  }
+
+  // Formula section if present
+  if (data.formula) {
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(10);
+    doc.setTextColor(100, 116, 139);
+    doc.text('Formula Used:', margin, y);
+    y += 5;
+
+    doc.setFont('courier', 'bold');
+    doc.setFontSize(9);
+    doc.setTextColor(79, 70, 229);
+    doc.text(data.formula, margin, y);
+    y += 8;
+  }
+
+  // Footer Disclaimer & Page Branding
+  const footerY = 280;
+  doc.setDrawColor(226, 232, 240);
+  doc.line(margin, footerY - 5, pageWidth - margin, footerY - 5);
+
+  doc.setFont('helvetica', 'normal');
+  doc.setFontSize(7.5);
+  doc.setTextColor(148, 163, 184);
+  doc.text(
+    'Generated by CalcHub (calchub.com) — Fast, Free, Simple Online Calculators.',
+    margin,
+    footerY
+  );
+  doc.text('Page 1 of 1', pageWidth - margin, footerY, { align: 'right' });
+
+  // Save the PDF file
+  const filename = `${data.calculatorName.toLowerCase().replace(/[^a-z0-9]+/g, '_')}_report.pdf`;
+  doc.save(filename);
+}

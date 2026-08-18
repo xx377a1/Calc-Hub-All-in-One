@@ -1,0 +1,6 @@
+{
+  "name": "CalcHub",
+  "description": "Fast, free, simple online calculators for everyday math, finance, health, unit conversions, and more.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
